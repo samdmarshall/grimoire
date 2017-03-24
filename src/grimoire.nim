@@ -64,6 +64,6 @@ for key in settings[environment_name].keys():
   if len(value) > 0:
     environment[key] = value
 
-let process = startProcess(exec_command, "",  command_arguments, environment, {poUsePath, poParentStreams, poStdErrToStdOut})
+let process = startProcess(exec_command, "",  command_arguments, environment, {poUsePath, poInteractive, poEchoCmd, poParentStreams})
 if process.waitForExit() != 0:
   quit(QuitFailure)
