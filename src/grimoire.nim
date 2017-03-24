@@ -7,7 +7,6 @@ import osproc
 import tables
 import strtabs
 import parsecfg
-import parseopt2
 
 import rune
 
@@ -31,24 +30,14 @@ var command_arguments = newSeq[string]()
 var environment_name = ""
 let settings = loadConfig(grimoire_config_path)
 
-for kind, key, value in getopt():
-  case kind
-  of cmdArgument:
-    if len(environment_name) == 0:
-      environment_name = key
-    else:
-      if len(exec_command) == 0:
-        exec_command = key
-      else:
-        command_arguments.add(key)
+for item in commandLineParams():
+  if len(environment_name) == 0:
+    environment_name = item
   else:
-    case key
-    of "--help", "-h":
-      discard
-    of "--version", "-v":
-      discard
+    if len(exec_command) == 0:
+      exec_command = item
     else:
-      discard
+      command_arguments.add(item)
 
 if not settings.contains(environment_name):
   echo("No environment named '" & environment_name & "' is defined!")
