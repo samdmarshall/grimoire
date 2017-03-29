@@ -3,6 +3,7 @@
 # =======
 
 import os
+import posix
 import osproc
 import tables
 import strtabs
@@ -54,5 +55,7 @@ for key in settings[environment_name].keys():
     environment[key] = value
 
 let process = startProcess(exec_command, "",  command_arguments, environment, {poUsePath, poInteractive, poParentStreams})
+onSignal(SIGABRT, SIGINT, SIGTERM, SIGHUP, SIGQUIT, SIGTRAP):
+  process.terminate()
 if process.waitForExit() != 0:
   quit(QuitFailure)
