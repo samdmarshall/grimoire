@@ -50,8 +50,12 @@ var environment = newStringTable(modeCaseSensitive)
 for key, value in envPairs():
   environment[key] = value
 for key in settings[environment_name].keys():
-  let value = config.getRune(key)
-  if len(value) > 0:
+  let value = settings.getSectionValue(environment_name, key)
+  if len(value) == 0:
+    let secure_value = config.getRune(key)
+    if len(secure_value) > 0:
+      environment[key] = secure_value
+  else:
     environment[key] = value
 
 let process = startProcess(exec_command, "",  command_arguments, environment, {poUsePath, poInteractive, poParentStreams})
