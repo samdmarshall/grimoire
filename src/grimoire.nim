@@ -46,7 +46,7 @@ if first_argument.startsWith("-"):
     for key in settings.keys():
       echo(key)
   of "--version", "-v":
-    echo("grimoire v0.2.1")
+    echo("grimoire v0.2.2")
   else:
     discard
   quit(QuitSuccess)
