@@ -40,7 +40,7 @@ for item in commandLineParams():
   else:
     command_arguments.add(item)
 
-if first_argument.startsWith("--"):
+if first_argument.startsWith("-"):
   case first_argument
   of "--list", "-l":
     for key in settings.keys():
