@@ -13,3 +13,4 @@ skipExt = @["nim"]
 # Dependencies
 requires "nim >= 0.16.0"
 requires "rune"
+requires "parsetoml >= 0.2"
