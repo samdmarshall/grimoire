@@ -3,12 +3,9 @@
 # =======
 
 import os
-import posix
 import osproc
 import tables
-import strtabs
 import strutils
-import parseopt2
 
 import rune
 import parsetoml
