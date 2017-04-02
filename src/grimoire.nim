@@ -35,10 +35,6 @@ type
     value: string
     remove: bool
 
-  Argument = object
-    own: bool
-    value: string
-
 # =================
 # Private Functions
 # =================
@@ -58,13 +54,10 @@ proc convertValue(value: TomlValueRef): string =
   else:
     return ""
 
-proc parseGrimoireArgument(item: TaintedString, own_args: bool): Argument =
+proc parseGrimoireArgument(item: TaintedString, own_args: bool): bool =
   if own_args:
-    if KnownArguments.contains(item):
-      return Argument(own: true, value: item)
-    else:
-      discard
-  return Argument(own: false, value: item)
+    return KnownArguments.contains(item)
+  return false
 
 proc createEnvString(env: seq[EnvVar]): string =
   var remove = newSeq[string]()
@@ -79,10 +72,8 @@ proc createEnvString(env: seq[EnvVar]): string =
   var output = " "
   if len(remove) > 0:
     output &= " -u " & remove.join(" ")
-
   if len(insert) > 0:
     output &= " " & insert.join(" ")
-
   return output
 
 # ===========
@@ -106,8 +97,7 @@ var command_arguments = newSeq[string]()
 
 for item in commandlineParams():
   let still_parsing_grimoire_args = len(command_arguments) == 0
-  let arg = parseGrimoireArgument(item, still_parsing_grimoire_args)
-  if arg.own:
+  if parseGrimoireArgument(item, still_parsing_grimoire_args):
     own_arguments.add(item)
   else:
     command_arguments.add(item)
