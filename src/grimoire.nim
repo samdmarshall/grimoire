@@ -8,9 +8,36 @@ import osproc
 import tables
 import strtabs
 import strutils
+import parseopt2
 
 import rune
 import parsetoml
+
+# =========
+# Constants
+# =========
+
+const
+  KnownArguments = @[
+    "--list", 
+    "-l", 
+    "--version", 
+    "-v"
+  ]
+
+# =====
+# Types
+# =====
+
+type
+  EnvVar = object
+    key: string
+    value: string
+    remove: bool
+
+  Argument = object
+    own: bool
+    value: string
 
 # =================
 # Private Functions
@@ -29,7 +56,34 @@ proc convertValue(value: TomlValueRef): string =
   of TomlValueKind.String:
     return value.stringVal
   else:
-    discard
+    return ""
+
+proc parseGrimoireArgument(item: TaintedString, own_args: bool): Argument =
+  if own_args:
+    if KnownArguments.contains(item):
+      return Argument(own: true, value: item)
+    else:
+      discard
+  return Argument(own: false, value: item)
+
+proc createEnvString(env: seq[EnvVar]): string =
+  var remove = newSeq[string]()
+  var insert = newSeq[string]()
+  
+  for item in env:
+    if item.remove:
+      remove.add(item.key)
+    else:
+      insert.add(item.key & "=" & item.value)
+
+  var output = " "
+  if len(remove) > 0:
+    output &= " -u " & remove.join(" ")
+
+  if len(insert) > 0:
+    output &= " " & insert.join(" ")
+
+  return output
 
 # ===========
 # Entry Point
@@ -46,67 +100,59 @@ if not existsFile(grimoire_config_path):
   echo("Unable to load settings file at path: " & grimoire_config_path)
   quit(QuitFailure)
 
-var exec_command = ""
-var command_arguments = newSeq[string]()
-var first_argument = ""
 let settings = parseFile(grimoire_config_path)
+var own_arguments = newSeq[string]()
+var command_arguments = newSeq[string]()
 
-for item in commandLineParams():
-  if len(first_argument) == 0:
-    first_argument = item
-  if len(exec_command) == 0:
-    exec_command = item
+for item in commandlineParams():
+  let still_parsing_grimoire_args = len(command_arguments) == 0
+  let arg = parseGrimoireArgument(item, still_parsing_grimoire_args)
+  if arg.own:
+    own_arguments.add(item)
   else:
     command_arguments.add(item)
 
-if first_argument.startsWith("-"):
-  case first_argument
+for arg in own_arguments:
+  case arg
   of "--list", "-l":
     for key in settings.keys():
       echo(key)
   of "--version", "-v":
-    echo("grimoire v0.2.3")
+    echo("grimoire v0.3")
   else:
     discard
   quit(QuitSuccess)
 
 let config = initConfiguration()
 
-var environment = newTable[string, string]()
+var environment = newSeq[EnvVar]()
 
-for key, value in envPairs():
-  environment[key] = value
+if len(command_arguments) > 0:
+  let exec_command = command_arguments[0]
 
-for key in settings.keys():
-  if key == exec_command:
-    let section = settings[key].tableVal
+  if settings.hasKey(exec_command):
+    let section = settings[exec_command].tableVal
     for prop in section.keys():
       case prop
       of "secure":
         let secure_variables = section[prop].arrayVal
         for variable in secure_variables:
           let variable_string = variable.stringVal
-          environment[variable_string] = config.getRune(variable_string)
+          let add_var = EnvVar(key: variable_string, value: config.getRune(variable_string))
+          environment.add(add_var)
       of "remove":
         let remove_variables = section[prop].arrayVal
         for variable in remove_variables:
           let variable_string = variable.stringVal
-          environment.del(variable_string)
+          let remove_var = EnvVar(key: variable_string, remove: true)
+          environment.add(remove_var)
       of "additional":
         let additional_variables_map = section[prop].tableVal
         for add_key, add_value in additional_variables_map:
-          environment[add_key] = convertValue(add_value)
+          let new_var = EnvVar(key: add_key, value: convertValue(add_value))
+          environment.add(new_var)
       else:
         discard
 
-var environment_values = newStringTable()
-for key, value in environment:
-  environment_values[key] = value
-
-if len(exec_command) > 0:
-  let process = startProcess(exec_command, "",  command_arguments, environment_values, {poUsePath, poInteractive, poParentStreams})
-  onSignal(SIGABRT, SIGINT, SIGTERM, SIGHUP, SIGQUIT, SIGTRAP):
-    process.terminate()
-  if process.waitForExit() != 0:
-    quit(QuitFailure)
-
+  var exec_string = "env" & createEnvString(environment) & " " & command_arguments.join(" ")
+  quit(execCmd(exec_string))
