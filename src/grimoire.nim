@@ -88,7 +88,7 @@ if not existsFile(grimoire_config_path):
   echo("Unable to load settings file at path: " & grimoire_config_path)
   quit(QuitFailure)
 
-let settings = parseFile(grimoire_config_path)
+let settings = parseFile(grimoire_config_path).getTable()
 var own_arguments = newSeq[string]()
 var command_arguments = newSeq[string]()
 
@@ -102,7 +102,7 @@ for item in commandlineParams():
 for arg in own_arguments:
   case arg
   of "--list", "-l":
-    for key in settings.keys():
+    for key,val in settings.pairs():
       echo(key)
   of "--version", "-v":
     echo("grimoire v0.3")

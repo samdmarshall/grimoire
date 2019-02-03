@@ -1,5 +1,5 @@
 # Package
-version = "0.1"
+version = "0.2.0"
 author = "Samantha Marshall"
 description = "tool to spawn and exec commands with custom environments"
 license = "BSD 3-Clause"
