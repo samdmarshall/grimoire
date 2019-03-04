@@ -105,7 +105,7 @@ for arg in own_arguments:
     for key,val in settings.pairs():
       echo(key)
   of "--version", "-v":
-    echo("grimoire v0.3")
+    echo("grimoire v0.3.1")
   else:
     discard
   quit(QuitSuccess)
