@@ -16,9 +16,9 @@ import parsetoml
 
 const
   KnownArguments = @[
-    "--list", 
-    "-l", 
-    "--version", 
+    "--list",
+    "-l",
+    "--version",
     "-v"
   ]
 
@@ -59,7 +59,7 @@ proc parseGrimoireArgument(item: TaintedString, own_args: bool): bool =
 proc createEnvString(env: seq[EnvVar]): string =
   var remove = newSeq[string]()
   var insert = newSeq[string]()
-  
+
   for item in env:
     if item.remove:
       remove.add(item.key)
@@ -115,7 +115,14 @@ let config = initConfiguration()
 var environment = newSeq[EnvVar]()
 
 if len(command_arguments) > 0:
-  let exec_command = command_arguments[0]
+  var index = 0
+  var exec_command = command_arguments[index]
+  while exec_command.startsWith("-"):
+    inc(index)
+    if index < command_arguments.high():
+      exec_command = command_arguments[index]
+    else:
+      break
 
   if settings.hasKey(exec_command):
     let section = settings[exec_command].tableVal
@@ -140,6 +147,7 @@ if len(command_arguments) > 0:
           environment.add(new_var)
       else:
         discard
-
-  var exec_string = "env" & createEnvString(environment) & " " & command_arguments.join(" ")
-  quit(execCmd(exec_string))
+  if index < command_arguments.high():
+    var exec_string = "env" & createEnvString(environment) & " " & (command_arguments[index..command_arguments.high()]).join(" ")
+    echo(exec_string)
+    quit(execCmd(exec_string))
