@@ -149,5 +149,4 @@ if len(command_arguments) > 0:
         discard
   if index < command_arguments.high():
     var exec_string = "env" & createEnvString(environment) & " " & (command_arguments[index..command_arguments.high()]).join(" ")
-    echo(exec_string)
     quit(execCmd(exec_string))
