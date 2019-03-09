@@ -1,5 +1,5 @@
 # Package
-version = "0.3.1"
+version = "0.4.0"
 author = "Samantha Marshall"
 description = "tool to spawn and exec commands with custom environments"
 license = "BSD 3-Clause"
@@ -8,7 +8,7 @@ srcDir = "src/"
 
 bin = @["grimoire"]
 
-skipExt = @["nim"]
+#skipExt = @["nim"]
 
 # Dependencies
 requires "nim >= 0.16.0"
