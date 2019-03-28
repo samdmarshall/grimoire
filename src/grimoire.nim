@@ -10,7 +10,7 @@ import logging
 import sequtils
 import strutils
 
-import rune
+import runepkg/lib
 import parsetoml
 
 import "commands.nim"
@@ -67,13 +67,13 @@ proc createEnvString(env: seq[EnvVar]): string =
     if item.remove:
       remove.add(item.key)
     else:
-      let value = 
+      let value =
         case item.value
         of "true", "True": "1"
         of "false", "False": "0"
         else:
-          "\"" & item.value & "\"" 
-          
+          "\"" & item.value & "\""
+
       insert.add(item.key & "=" & value)
 
   var output = " "
@@ -92,7 +92,7 @@ let config_path_dir =  getEnv("XDG_CONFIG_HOME", "~/.config".expandTilde()) / pr
 var config_path = config_path_dir / addFileExt(progName(), "toml")
 
 let log_path = config_path_dir / "logs" / addFileExt(progName(), "log")
-var logger = newFileLogger(log_path)
+var logger = newRollingFileLogger(log_path, bufSize = (1 * 1024 * 1024))
 addHandler(logger)
 info("New instance of " & progName() & " started at " & $now())
 
@@ -121,7 +121,7 @@ for arg in arguments:
 
 let contents = initPages(config_path)
 
-let args_end = 
+let args_end =
   if exec_argument_index == 0: uint(arguments.high())
   else: exec_argument_index
 
