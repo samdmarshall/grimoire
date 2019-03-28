@@ -31,7 +31,7 @@ type
 # =========
 
 const
-  VersionNumber = "v0.4.0"
+  VersionNumber = "v0.4.1"
 
 # =================
 # Private Functions
