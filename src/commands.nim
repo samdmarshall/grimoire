@@ -10,44 +10,6 @@ import sequtils
 
 import "page.nim"
 
-# =====
-# Types
-# =====
-
-type
-  ArgType* = enum
-    atNone,
-    atExec,
-    atShortFlag,
-    atLongFlag
-
-  Argument* = object
-    index*: uint
-    case kind*: ArgType
-    of atExec:
-      path*: string
-      options*: string
-    of atShortFlag, atLongFlag:
-      flag*: string
-      value*: string
-    else:
-      discard
-
-# =========
-# Constants
-# =========
-
-const
-  VersionFlags* =      @["-v", "--version"]
-  HelpFlags* =         @["-h", "--help"]
-  UsageFlags* =        @["-?", "--usage"]
-  ConfigFlags* =       @["-c", "--config"]
-  ListAllFlags* =      @["-a", "--list-all"]
-  ListEnabledFlags* =  @["-e", "--list-enabled"]
-  ListDisabledFlags* = @["-d", "--list-disabled"]
-  EnableFlags* =       @["-E", "--enable"]
-  DisableFlags* =      @["-D", "--disable"]
-  KnownFlags* = concat(VersionFlags, HelpFlags, UsageFlags, ConfigFlags, ListAllFlags, ListEnabledFlags, ListDisabledFlags, EnableFlags, DisableFlags)
 
 # =========
 # Functions

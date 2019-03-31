@@ -2,6 +2,20 @@
 # Imports
 # =======
 
+import
+  "logging.nim"
+  "config.nim"
+  "cli.nim"
+
+# ===========
+# Entry Point
+# ===========
+
+when isMainModule:
+  let arguments = initArguments(commandlineParams, ArgSource.CommandLineInput)
+
+#[
+
 import os
 import re
 import times
@@ -13,8 +27,12 @@ import strutils
 import runepkg/lib
 import parsetoml
 
+import "cli.nim"
+
+import "cli.nim"
 import "commands.nim"
 import "page.nim"
+
 
 # =====
 # Types
@@ -24,59 +42,39 @@ type
   EnvVar = object
     key: string
     value: string
+    secret: bool
     remove: bool
 
-# =========
-# Constants
-# =========
+  Command = object
+    environment: seq[EnvVar]
+    executable: Argument
+    defaultFlags: seq[Argument]
 
-const
-  VersionNumber = "v0.4.1"
 
 # =================
 # Private Functions
 # =================
 
-proc progName(): string =
-  return getAppFilename().extractFilename()
 
-proc usageInfo() =
-  echo("Usage: " & progName() & "\n" &
-    "\t-v,--version        # prints version information\n" &
-    "\t-h,--help\n" &
-    "\t-?,--usage          # prints help/usage information\n" &
-    "\t--verbose\n" &
-    "\t--debug             # increases logged information verbosity\n" &
-    "\t-c,--config <path>  # overrides the default config search path (~/.config/grimoire)\n" &
-    "\t-a,--list-all       # displays all registered applications\n" &
-    "\t-e,--list-enabled   # displays enabled registered applications\n" &
-    "\t-d,--list-disabled  # displays disabled registered applications\n" &
-    "\t-E,--enable <app>   # toggles registered application to be enabled\n" &
-    "\t-D,--disable <app>  # toggles registered application to be disabled\n")
-  quit(QuitSuccess)
-
-proc versionInfo() =
-  echo(progName() & " " & VersionNumber)
-  quit(QuitSuccess)
 
 proc createEnvString(env: seq[EnvVar]): string =
   var remove = newSeq[string]()
   var insert = newSeq[string]()
 
-  for item in env:
+for item in env:
     if item.remove:
       remove.add(item.key)
     else:
       let value =
-        case item.value
-        of "true", "True": "1"
-        of "false", "False": "0"
+        case item.value.toLowerAscii()
+        of  "true": "1"
+        of "false": "0"
         else:
           "\"" & item.value & "\""
 
-      insert.add(item.key & "=" & value)
+        insert.add(item.key & "=" & value)
 
-  var output = " "
+var output = " "
   if len(remove) > 0:
     output &= " -u " & remove.join(" ")
   if len(insert) > 0:
@@ -84,17 +82,10 @@ proc createEnvString(env: seq[EnvVar]): string =
   return output
 
 
-# ===========
-# Entry Point
-# ===========
 
 let config_path_dir =  getEnv("XDG_CONFIG_HOME", "~/.config".expandTilde()) / progName()
 var config_path = config_path_dir / addFileExt(progName(), "toml")
 
-let log_path = config_path_dir / "logs" / addFileExt(progName(), "log")
-var logger = newRollingFileLogger(log_path, bufSize = (1 * 1024 * 1024))
-addHandler(logger)
-info("New instance of " & progName() & " started at " & $now())
 
 let arguments = initArguments(commandlineParams())
 debug("Parsed " & $len(arguments) & " arguments from command line")
@@ -162,18 +153,19 @@ var environment = newSeq[EnvVar]()
 let vault: RuneConfiguration = initConfiguration()
 
 for token in entry.secureVariables:
-  let envvar = EnvVar(key: token, value: vault.getRune(token), remove: false)
+  let envvar = EnvVar(key: token, value: vault.getRune(token), secret: true, remove: false)
   environment.add(envvar)
 
 for token in entry.removeVariables:
-  let envvar = EnvVar(key: token, value: "", remove: true)
+  let envvar = EnvVar(key: token, value: "", secret: false, remove: true)
   environment.add(envvar)
 
 for token in entry.properties.keys():
-  let envvar = EnvVar(key: token, value: entry.properties[token], remove: false)
+  let envvar = EnvVar(key: token, value: entry.properties[token], secret: false, remove: false)
   environment.add(envvar)
 
-let exec_command = "env" & environment.createEnvString() & " " & exec_arg.path & " " & exec_arg.options
+let exec_command = "env" & environment.createEnvString() & " " & exec_arg.path & " " & entry.defaultArguments & " " & exec_arg.options
 
 quit(execCmd(exec_command))
 
+]#
