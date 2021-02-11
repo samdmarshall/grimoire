@@ -70,8 +70,8 @@ proc initPages*(config_path: string): seq[Page] =
   if not existsFile(config_path):
     echo("Unable to load settings file at path: " & config_path)
     quit(QuitFailure)
-  
-  var pages = newSeq[Page]()
+
+  result = newSeq[Page]()
   let settings = parseFile(config_path).getTable()
   for key in settings.keys():
     debug("processing page '" & key & "'...")
@@ -83,27 +83,27 @@ proc initPages*(config_path: string): seq[Page] =
     let status = props["status"].getBool()
     debug("  enabled: " & $status)
 
-    let secureVars = 
+    let secureVars =
       if props.hasKey("secure"): convertArray(props["secure"].arrayVal)
       else: @[]
     debug("  secure: [" & secureVars.join(", ") & "]")
 
-    let removeVars = 
+    let removeVars =
       if props.hasKey("remove"): convertArray(props["remove"].arrayVal)
       else: @[]
     debug("  remove: [" & removeVars.join(", ") & "]")
 
-    let additional = 
+    let additional =
       if props.hasKey("additional"): convertTable(props["additional"].getTable())
       else: newTable[string, string]()
     debug("  additional properties: " & $additional)
 
-    let page = Page(name: name, 
-                    enabled: status, 
-                    secureVariables: secureVars, 
-                    removeVariables: removeVars, 
+    let page = Page(name: name,
+                    enabled: status,
+                    secureVariables: secureVars,
+                    removeVariables: removeVars,
                     properties: additional)
     debug("adding page '" & page.name & "' to index...")
-    pages.add(page)
+    result.add(page)
   debug("gathered all registered pages!")
-  return pages
+

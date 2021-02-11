@@ -2,8 +2,6 @@
 # Imports
 # =======
 
-import sets
-import hashes
 import logging
 import parseopt
 import sequtils
@@ -22,7 +20,7 @@ type
     atLongFlag
 
   Argument* = object
-    index*: uint
+    index*: int
     case kind*: ArgType
     of atExec:
       path*: string
@@ -30,7 +28,7 @@ type
     of atShortFlag, atLongFlag:
       flag*: string
       value*: string
-    else:
+    of atNone:
       discard
 
 # =========
@@ -47,37 +45,48 @@ const
   ListDisabledFlags* = @["-d", "--list-disabled"]
   EnableFlags* =       @["-E", "--enable"]
   DisableFlags* =      @["-D", "--disable"]
-  KnownFlags* = concat(VersionFlags, HelpFlags, UsageFlags, ConfigFlags, ListAllFlags, ListEnabledFlags, ListDisabledFlags, EnableFlags, DisableFlags)
+  VerboseFlags* =      @["--verbose"]
+  DebugFlags* =        @["--debug"]
+  KnownFlags* = concat(VersionFlags, HelpFlags, UsageFlags, ConfigFlags, ListAllFlags, ListEnabledFlags, ListDisabledFlags, EnableFlags, DisableFlags, VerboseFlags, DebugFlags)
 
 # =========
 # Functions
 # =========
 
 proc initArguments*(input: seq[TaintedString]): seq[Argument] =
-  var arguments = newSeq[Argument]()
-  var counter: uint = 0
+  result = newSeq[Argument]()
+  var counter: int = 0
+  var finished_parsing_arguments = false
   var cmd = initOptParser(input)
   for kind, key, value in cmd.getopt():
-    case kind:
-      of cmdArgument:
-        let arg = Argument(index: counter, kind: atExec, path: key, options: cmd.cmdLineRest())
-        debug("parsed argument: " & arg.path & " with options: " & $arg.options & " at position: " & $arg.index) 
-        arguments.add(arg)
-        break
-      of cmdShortOption:
-        let arg = Argument(index: counter, kind: atShortFlag, flag: "-"&key, value: value)
+    var arg: Argument
+    case kind
+    of cmdArgument:
+      if not finished_parsing_arguments:
+        finished_parsing_arguments = true
+      arg = Argument(index: counter, kind: atExec, path: key, options: cmd.cmdLineRest())
+      debug("parsed argument: " & arg.path & " with options: " & $arg.options & " at position: " & $arg.index)
+    of cmdShortOption:
+      if not finished_parsing_arguments:
+        arg = Argument(index: counter, kind: atShortFlag, flag: "-"&key, value: value)
         debug("parsed short flag: " & $arg.flag & " with value: " & $arg.value & " at position: " & $arg.index)
-        arguments.add(arg)
-      of cmdLongOption:
-        let arg = Argument(index: counter, kind: atLongFlag, flag: "--"&key, value: value)
-        debug("parsed long flag: " & $arg.flag & " with value: " & $arg.value & " at position: " & $arg.index)
-        arguments.add(arg)
-      else:
-        discard
+    of cmdLongOption:
+      if not finished_parsing_arguments:
+        if key == "":
+          arg = Argument(index: counter, kind: atNone)
+          debug("parsed separator at position: " & $arg.index)
+          finished_parsing_arguments = true
+        else:
+          arg = Argument(index: counter, kind: atLongFlag, flag: "--"&key, value: value)
+          debug("parsed long flag: " & $arg.flag & " with value: " & $arg.value & " at position: " & $arg.index)
+    else:
+      arg = Argument(index: counter, kind: atNone)
+    result.add(arg)
+    if finished_parsing_arguments and result[result.high()].kind == atExec:
+      break
     debug("incrementing argument counter " & $counter & " -> " & $(counter + 1))
     inc(counter)
   info("successfully parsed " & $counter & " arguments!")
-  return arguments
 
 proc listAll*(contents: seq[Page]) =
   for page in contents:
