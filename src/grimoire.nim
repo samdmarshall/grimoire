@@ -178,9 +178,9 @@ proc main() =
 
   var environment = newSeq[EnvVar]()
 
-  let rune_config_path = resolveConfigPath(DefaultConfigurationPath, EnvVar_Config)
+  let rune_config_path = resolveConfigPath(expandTilde("~/.config/rune/config.toml"), EnvVar_Config)
   if not fileExists(rune_config_path):
-    echo(fmt"Unable to locate the configuration file, please create it at path: `{DefaultConfigPath}` or define `{EnvVar_Config}` with the path value in your shell environment.")
+    echo(fmt"Unable to locate the configuration file, please create it at path: `~/.config/rune/config.toml` or define `{EnvVar_Config}` with the path value in your shell environment.")
     quit(QuitFailure)
   let vault = initConfiguration(rune_config_path)
 
